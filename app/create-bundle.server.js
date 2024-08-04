@@ -4,18 +4,18 @@ export async function createBundle(request, bundleData) {
   const { admin } = await authenticate.admin(request);
 
   const CREATE_BUNDLE_MUTATION = `
-    mutation productBundleCreate($input: ProductBundleCreateInput!) {
-      productBundleCreate(input: $input) {
-        productBundleOperation {
-          status
-        }
-        userErrors {
-          field
-          message
-        }
-        
+  mutation ProductBundleCreate($input: ProductBundleCreateInput!) {
+    productBundleCreate(input: $input) {
+      productBundleOperation {
+        id
+        status
+      }
+      userErrors {
+        message
+        field
       }
     }
+  }
   `;
 
   try {
