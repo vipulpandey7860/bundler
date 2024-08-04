@@ -1,0 +1,33 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "22a72f7b981d8675311736a675aed795"
+name = "Bundler"
+handle = "bundler-46"
+application_url = "https://separation-kansas-wealth-dam.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "bundling-app-test-store.myshopify.com"
+include_config_on_deploy = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://separation-kansas-wealth-dam.trycloudflare.com/auth/callback",
+  "https://separation-kansas-wealth-dam.trycloudflare.com/auth/shopify/callback",
+  "https://separation-kansas-wealth-dam.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks"
+
+[pos]
+embedded = false
