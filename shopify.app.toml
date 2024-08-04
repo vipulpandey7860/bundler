@@ -3,7 +3,7 @@
 client_id = "22a72f7b981d8675311736a675aed795"
 name = "Bundler"
 handle = "bundler-46"
-application_url = "https://separation-kansas-wealth-dam.trycloudflare.com"
+application_url = "https://mistakes-acid-eur-using.trycloudflare.com"
 embedded = true
 
 [build]
@@ -13,13 +13,13 @@ include_config_on_deploy = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_cart_transforms,write_products"
 
 [auth]
 redirect_urls = [
-  "https://separation-kansas-wealth-dam.trycloudflare.com/auth/callback",
-  "https://separation-kansas-wealth-dam.trycloudflare.com/auth/shopify/callback",
-  "https://separation-kansas-wealth-dam.trycloudflare.com/api/auth/callback"
+  "https://mistakes-acid-eur-using.trycloudflare.com/auth/callback",
+  "https://mistakes-acid-eur-using.trycloudflare.com/auth/shopify/callback",
+  "https://mistakes-acid-eur-using.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
