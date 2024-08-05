@@ -3,7 +3,7 @@
 client_id = "22a72f7b981d8675311736a675aed795"
 name = "Bundler"
 handle = "bundler-46"
-application_url = "https://mistakes-acid-eur-using.trycloudflare.com"
+application_url = "https://xl-elegant-tcp-top.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "write_cart_transforms,write_products"
 
 [auth]
 redirect_urls = [
-  "https://mistakes-acid-eur-using.trycloudflare.com/auth/callback",
-  "https://mistakes-acid-eur-using.trycloudflare.com/auth/shopify/callback",
-  "https://mistakes-acid-eur-using.trycloudflare.com/api/auth/callback"
+  "https://xl-elegant-tcp-top.trycloudflare.com/auth/callback",
+  "https://xl-elegant-tcp-top.trycloudflare.com/auth/shopify/callback",
+  "https://xl-elegant-tcp-top.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
