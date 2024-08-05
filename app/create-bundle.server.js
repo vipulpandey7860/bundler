@@ -4,8 +4,6 @@ export async function createBundle(request, formData) {
   const { admin } = await authenticate.admin(request);
   const bundleData = JSON.parse(formData.get('formData'));
 
-  console.log(bundleData);
-
   const CREATE_PRODUCT_BUNDLE_MUTATION = `
   mutation ProductBundleCreate($input: ProductBundleCreateInput!) {
     productBundleCreate(input: $input) {
@@ -20,45 +18,40 @@ export async function createBundle(request, formData) {
       __typename
     }
   }
-  
   `;
 
- 
-
   try {
-    // Step 1: Create the bundle product
     const createProductResponse = await admin.graphql(CREATE_PRODUCT_BUNDLE_MUTATION, {
       variables: {
-          "input": {
-            "title": bundleData.bundleName,
-          "components": bundleData.products.map((product) => {
-            return {
-              "quantity": product.quantity,
-              "productId": product.id,
-              "optionSelections": product.options.map((option) => {
-                return {
-                  "componentOptionId": option.id,
-                  "name": option.name,
-                  "values": option.values
-                }
-              })
-            }
-          })
-          }
+        "input": {
+          "title": bundleData.bundleName,           
+          "components": bundleData.products.map((product) => ({
+            "quantity": product.quantity,
+            "productId": product.id,
+            "optionSelections": product.options.map((option) => ({
+              "componentOptionId": option.id,
+              "name": option.name,
+              "values": option.values
+            }))
+          }))
+        }
       },
     });
 
-    const createProductData = await createProductResponse.json();
-    console.log(createProductData);
-  
+    const productBundleData = await createProductResponse.json();
+    
+    if (productBundleData.data.productBundleCreate.userErrors.length > 0) {
+      throw new Error(productBundleData.data.productBundleCreate.userErrors[0].message);
+    }
+
+
     return {
       success: true,
       message: "Bundle created successfully",
-      data: createProductData.data.productCreate.product,
+      bundle: productBundleData.data,
     };
   } catch (error) {
     console.error("Error creating bundle:", error);
     throw error;
   }
 }
-
