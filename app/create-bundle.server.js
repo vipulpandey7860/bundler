@@ -1,56 +1,64 @@
 import { authenticate } from "./shopify.server";
 
-export async function createBundle(request, bundleData) {
+export async function createBundle(request, formData) {
   const { admin } = await authenticate.admin(request);
+  const bundleData = JSON.parse(formData.get('formData'));
 
-  const CREATE_BUNDLE_MUTATION = `
+  console.log(bundleData);
+
+  const CREATE_PRODUCT_BUNDLE_MUTATION = `
   mutation ProductBundleCreate($input: ProductBundleCreateInput!) {
     productBundleCreate(input: $input) {
       productBundleOperation {
         id
-        status
+        __typename
       }
       userErrors {
         message
-        field
+        __typename
       }
+      __typename
     }
   }
+  
   `;
 
+ 
+
   try {
-    const response = await admin.graphql(CREATE_BUNDLE_MUTATION, {
+    // Step 1: Create the bundle product
+    const createProductResponse = await admin.graphql(CREATE_PRODUCT_BUNDLE_MUTATION, {
       variables: {
-        input: {
-          title: bundleData.title,
-          components: bundleData.components.map(component => ({
-            productId: component.productId,
-            quantity: component.quantity,
-            optionSelections: component.optionSelections.map(option => ({
-              componentOptionId: option.componentOptionId,
-              name: option.name,
-              values: option.values
-            })),
-            quantityOption: component.quantityOption ? {
-              name: component.quantityOption.name,
-              values: component.quantityOption.values.map(value => ({
-                name: value.name,
-                quantity: value.quantity
-              }))
-            } : undefined
-          }))
-        }
-      }
+          "input": {
+            "title": bundleData.bundleName,
+          "components": bundleData.products.map((product) => {
+            return {
+              "quantity": product.quantity,
+              "productId": product.id,
+              "optionSelections": product.options.map((option) => {
+                return {
+                  "componentOptionId": option.id,
+                  "name": option.name,
+                  "values": option.values
+                }
+              })
+            }
+          })
+          }
+      },
     });
 
-    const responseJson = await response.json();
-    if (responseJson.data.productBundleCreate.userErrors.length > 0) {
-      throw new Error(responseJson.data.productBundleCreate.userErrors[0].message);
-    }
-
-    return responseJson.data.productBundleCreate.productBundleOperation;
+    const createProductData = await createProductResponse.json();
+    console.log(createProductData);
+  
+    return {
+      success: true,
+      message: "Bundle created successfully",
+      data: createProductData.data.productCreate.product,
+    };
   } catch (error) {
     console.error("Error creating bundle:", error);
     throw error;
   }
 }
+

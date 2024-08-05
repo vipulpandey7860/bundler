@@ -16,8 +16,8 @@ import {
   InlineError,
   Card,
   Icon,
-  Checkbox,
   Form,
+  Tag,
 } from "@shopify/polaris";
 
 import {
@@ -31,133 +31,14 @@ import { useActionData, useNavigation, useSubmit } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { createBundle } from "../create-bundle.server";
 
-
 const placeholderImage =
   "https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg";
 
-function ResourceListWithVariants({
-  items,
-  selectedVariants,
-  handleVariantSelection,
-}) {
-  const [expandedProductId, setExpandedProductId] = useState(null);
-
-  const resourceName = {
-    singular: "product",
-    plural: "products",
-  };
-
-  return (
-    <Card>
-      <ResourceList
-        resourceName={resourceName}
-        items={items}
-        renderItem={(item) =>
-          renderItem(item, selectedVariants, handleVariantSelection)
-        }
-      />
-    </Card>
-  );
-
-  function renderItem(item, selectedVariants, handleVariantSelection) {
-    const { id, url, name, location, image, variants } = item;
-    const media = (
-      <Avatar
-        customer
-        size="md"
-        name={name}
-        source={image || placeholderImage}
-      />
-    );
-    const isExpanded = expandedProductId === id;
-
-    return (
-      <div key={id}>
-        <ResourceItem
-          id={id}
-          url={url}
-          media={media}
-          accessibilityLabel={`View details for ${name}`}
-        >
-          <InlineStack align="space-between">
-            <BlockStack>
-              <Text variant="bodyMd" fontWeight="bold" as="h3">
-                {name}
-              </Text>
-              <div>{location}</div>
-            </BlockStack>
-            <Button
-              plain
-              icon={<Icon source={isExpanded ? CaretUpIcon : CaretDownIcon} />}
-              onClick={() => setExpandedProductId(isExpanded ? null : id)}
-              accessibilityLabel={
-                isExpanded ? "Collapse variants" : "Expand variants"
-              }
-            />
-          </InlineStack>
-        </ResourceItem>
-        {isExpanded && variants && variants.length > 0 && (
-          <ResourceList
-            resourceName={{ singular: "variant", plural: "variants" }}
-            items={variants}
-            renderItem={(variant) =>
-              renderVariantItem(
-                variant,
-                selectedVariants,
-                handleVariantSelection,
-              )
-            }
-          />
-        )}
-      </div>
-    );
-  }
-
-  function renderVariantItem(
-    variant,
-    selectedVariants,
-    handleVariantSelection,
-  ) {
-    const { id, title, price, image } = variant;
-    const media = (
-      <Avatar
-        customer
-        size="md"
-        name={title}
-        source={image?.originalSrc || placeholderImage}
-      />
-    );
-
-    return (
-      <ResourceItem
-        id={id}
-        media={media}
-        accessibilityLabel={`View details for ${title}`}
-      >
-        <InlineStack align="space-between">
-          <BlockStack>
-            <Text variant="bodyMd" fontWeight="bold" as="h3">
-              {title}
-            </Text>
-            <div>Price: {price}</div>
-          </BlockStack>
-          <Checkbox
-            label="Select variant"
-            checked={selectedVariants.includes(id)}
-            onChange={() => handleVariantSelection(id)}
-          />
-        </InlineStack>
-      </ResourceItem>
-    );
-  }
-}
-
 export const action = async ({ request }) => {
   const formData = await request.formData();
-  const bundleData = JSON.parse(formData.get("bundleData"));
 
   try {
-    const result = await createBundle(request, bundleData);
+    const result = await createBundle(request, formData);
     return json({ success: true, bundleOperation: result });
   } catch (error) {
     console.error("Error creating bundle:", error);
@@ -170,7 +51,6 @@ export default function Onboarding() {
   const [formData, setFormData] = useState({
     bundleName: "",
     products: [],
-    selectedVariants: [],
     discountType: "percentage",
     discountValue: "",
     startDate: new Date(),
@@ -187,14 +67,14 @@ export default function Onboarding() {
     (field) => (value) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
     },
-    [],
+    []
   );
 
   const handleDateChange = useCallback(
     (field) => (date) => {
       setFormData((prev) => ({ ...prev, [field]: date }));
     },
-    [],
+    []
   );
 
   const handleProductSelection = useCallback(async () => {
@@ -202,31 +82,28 @@ export default function Onboarding() {
       const selection = await app.resourcePicker({
         type: "product",
         action: "select",
-        filter: { variants: false, draft: false, archived: false },
         multiple: true,
       });
 
       if (selection && selection.length > 0) {
-        const selectedProducts = selection.map((product) => ({
+        const productsWithQuantityAndOptions = selection.map(product => ({
           id: product.id,
-          url: product.url,
-          name: product.title,
-          location: product.vendor,
-          image: product.images[0]?.originalSrc,
-          variants: product.variants.map((variant) => ({
-            id: variant.id,
-            title: variant.title,
-            price: variant.price,
-            image: variant.image?.originalSrc,
-          })),
+          title: product.title,
+          vendor: product.vendor,
+          images: product.images,
+          quantity: 1,
+          options: product.options.map(option => ({
+            id: option.id,
+            name: option.name,
+            values: option.values.map(value => ({
+              value,
+              selected: true
+            }))
+          }))
         }));
-        const allVariantIds = selectedProducts.flatMap((product) =>
-          product.variants.map((variant) => variant.id),
-        );
         setFormData((prev) => ({
           ...prev,
-          products: selectedProducts,
-          selectedVariants: allVariantIds,
+          products: productsWithQuantityAndOptions,
         }));
       }
     } catch (error) {
@@ -234,13 +111,36 @@ export default function Onboarding() {
     }
   }, [app]);
 
-  const handleVariantSelection = useCallback((variantId) => {
-    setFormData((prev) => {
-      const updatedSelectedVariants = prev.selectedVariants.includes(variantId)
-        ? prev.selectedVariants.filter((id) => id !== variantId)
-        : [...prev.selectedVariants, variantId];
-      return { ...prev, selectedVariants: updatedSelectedVariants };
-    });
+  const handleQuantityChange = useCallback((id, quantity) => {
+    setFormData((prev) => ({
+      ...prev,
+      products: prev.products.map(product =>
+        product.id === id ? { ...product, quantity: parseInt(quantity, 10) || 1 } : product
+      ),
+    }));
+  }, []);
+
+  const handleOptionValueToggle = useCallback((productId, optionId, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      products: prev.products.map(product =>
+        product.id === productId
+          ? {
+              ...product,
+              options: product.options.map(option =>
+                option.id === optionId
+                  ? {
+                      ...option,
+                      values: option.values.map(v =>
+                        v.value === value ? { ...v, selected: !v.selected } : v
+                      )
+                    }
+                  : option
+              )
+            }
+          : product
+      ),
+    }));
   }, []);
 
   const validateStep = () => {
@@ -255,10 +155,6 @@ export default function Onboarding() {
           newErrors.products = "At least one product must be selected";
         break;
       case 3:
-        if (formData.selectedVariants.length === 0)
-          newErrors.variants = "At least one variant must be selected";
-        break;
-      case 4:
         if (!formData.discountValue.trim())
           newErrors.discountValue = "Discount value is required";
         else if (
@@ -267,7 +163,7 @@ export default function Onboarding() {
         )
           newErrors.discountValue = "Discount value must be a positive number";
         break;
-      case 5:
+      case 4:
         if (!formData.description.trim())
           newErrors.description = "Description is required";
         break;
@@ -288,61 +184,18 @@ export default function Onboarding() {
 
   const handleSubmit = useCallback(() => {
     if (validateStep()) {
-      console.log("Form Data:", formData); // Log the entire form data for debugging
-
-      const bundleData = {
-        title: formData.bundleName,
-        components: formData.products
-          .map((product) => {
-            console.log("Processing product:", product); // Log each product for debugging
-
-            const selectedVariant = product.variants.find((v) =>
-              formData.selectedVariants.includes(v.id),
-            );
-
-            if (!selectedVariant) {
-              console.log("No selected variant for product:", product.id);
-              return null; // Skip if no variant is selected for this product
-            }
-
-            let optionSelections = [];
-            if (product.options && Array.isArray(product.options)) {
-              optionSelections = product.options
-                .map((option) => {
-                  const selectedValue = selectedVariant.title
-                    .split(" - ")
-                    .find((part) => option.values.includes(part));
-
-                  return {
-                    componentOptionId: option.id,
-                    name: option.name,
-                    values: selectedValue ? [selectedValue] : [],
-                  };
-                })
-                .filter((option) => option.values.length > 0);
-            } else {
-              // Fallback if product.options is not available or not an array
-              optionSelections = [
-                {
-                  componentOptionId: selectedVariant.id,
-                  name: "Default Option",
-                  values: [selectedVariant.title],
-                },
-              ];
-            }
-
-            return {
-              productId: product.id,
-              quantity: 1,
-              optionSelections: optionSelections,
-            };
-          })
-          .filter(Boolean), // Remove any null entries (products without selected variants)
+      const cleanedFormData = {
+        ...formData,
+        products: formData.products.map(product => ({
+          ...product,
+          options: product.options.map(option => ({
+            ...option,
+            values: option.values.filter(v => v.selected).map(v => v.value)
+          }))
+        }))
       };
-
-      console.log("Bundle Data:", bundleData); // Log the final bundle data for debugging
-
-      submit({ bundleData: JSON.stringify(bundleData) }, { method: "post" });
+      console.log("Submitting form data:", cleanedFormData);
+      submit({ formData: JSON.stringify(cleanedFormData) }, { method: "post" });
     }
   }, [formData, validateStep, submit]);
 
@@ -382,26 +235,56 @@ export default function Onboarding() {
                   resourceName={{ singular: "product", plural: "products" }}
                   items={formData.products}
                   renderItem={(item) => {
-                    const { id, url, name, location, image } = item;
+                    const { id, title, vendor, images, quantity, options } = item;
                     const media = (
                       <Avatar
                         customer
                         size="md"
-                        name={name}
-                        source={image || placeholderImage}
+                        name={title}
+                        source={images[0]?.originalSrc || placeholderImage}
                       />
                     );
                     return (
                       <ResourceItem
                         id={id}
-                        url={url}
                         media={media}
-                        accessibilityLabel={`View details for ${name}`}
+                        accessibilityLabel={`View details for ${title}`}
                       >
-                        <Text variant="bodyMd" fontWeight="bold" as="h3">
-                          {name}
-                        </Text>
-                        <div>{location}</div>
+                        <BlockStack gap="200">
+                          <InlineStack gap="500" align="space-between">
+                            <BlockStack>
+                              <Text variant="bodyMd" fontWeight="bold" as="h3">
+                                {title}
+                              </Text>
+                              <div>{vendor}</div>
+                            </BlockStack>
+                            <TextField
+                              label="Quantity"
+                              type="number"
+                              value={quantity.toString()}
+                              onChange={(value) => handleQuantityChange(id, value)}
+                              min={1}
+                            />
+                          </InlineStack>
+                          {options.map((option) => (
+                            <BlockStack key={option.id}>
+                              <Text variant="bodyMd" fontWeight="semibold">
+                                {option.name}
+                              </Text>
+                              <InlineStack gap="300" wrap>
+                                {option.values.map((valueObj) => (
+                                  <Tag
+                                    key={valueObj.value}
+                                    onClick={() => handleOptionValueToggle(id, option.id, valueObj.value)}
+                                    className={valueObj.selected ? "selected-tag" : ""}
+                                  >
+                                    {valueObj.value}
+                                  </Tag>
+                                ))}
+                              </InlineStack>
+                            </BlockStack>
+                          ))}
+                        </BlockStack>
                       </ResourceItem>
                     );
                   }}
@@ -422,22 +305,6 @@ export default function Onboarding() {
           </Card>
         );
       case 3:
-        return (
-          <Card>
-            <BlockStack gap="500">
-              <Text variant="heading2xl" as="h2">
-                Select Variants
-              </Text>
-              {errors.variants && <InlineError message={errors.variants} />}
-              <ResourceListWithVariants
-                items={formData.products}
-                selectedVariants={formData.selectedVariants}
-                handleVariantSelection={handleVariantSelection}
-              />
-            </BlockStack>
-          </Card>
-        );
-      case 4:
         return (
           <Card>
             <BlockStack gap="500">
@@ -478,7 +345,7 @@ export default function Onboarding() {
             </BlockStack>
           </Card>
         );
-      case 5:
+      case 4:
         return (
           <Card>
             <BlockStack gap="500">
@@ -506,7 +373,7 @@ export default function Onboarding() {
         <BlockStack gap="500">
           <Card>
             <ProgressBar
-              progress={(step / 5) * 100}
+              progress={(step / 4) * 100}
               size="small"
               tone="primary"
             />
@@ -525,7 +392,7 @@ export default function Onboarding() {
                 )}
               </div>
               <div>
-                {step < 5 ? (
+                {step < 4 ? (
                   <Button primary onClick={handleNextStep}>
                     <InlineStack gap="200">
                       <Text>Next</Text>
