@@ -30,3 +30,62 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+
+
+model Bundle {
+  id                String       @id @default(uuid())
+  shop              String
+  name              String
+  description       String?
+  isActive          Boolean      @default(true)
+  createSectionBlock Boolean     @default(false)
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  bundleItems       BundleItem[]
+  BundleDiscount    BundleDiscount?
+}
+
+model BundleItem {
+  id          String        @id @default(uuid())
+  bundleId    String
+  bundle      Bundle        @relation(fields: [bundleId], references: [id])
+  productId   String
+  quantity    Int           @default(1)
+  title       String
+  vendor      String
+  images      BundleItemImage[]
+  options     BundleItemOption[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model BundleItemImage {
+  id          String    @id @default(uuid())
+  bundleItemId String
+  bundleItem  BundleItem @relation(fields: [bundleItemId], references: [id])
+  imageId     String
+  altText     String?
+  originalSrc String
+}
+
+model BundleItemOption {
+  id          String    @id @default(uuid())
+  bundleItemId String
+  bundleItem  BundleItem @relation(fields: [bundleItemId], references: [id])
+  optionId    String
+  name        String
+  values      String    // Store as JSON string
+}
+
+model BundleDiscount {
+  id          String   @id @default(uuid())
+  bundleId    String   @unique
+  bundle      Bundle   @relation(fields: [bundleId], references: [id])
+  type        String   // e.g., "percentage", "fixed_amount"
+  value       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
