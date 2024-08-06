@@ -3,7 +3,7 @@
 client_id = "22a72f7b981d8675311736a675aed795"
 name = "Bundler"
 handle = "bundler-46"
-application_url = "https://graphs-genetics-municipality-publish.trycloudflare.com"
+application_url = "https://grande-maui-treatments-sponsor.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "write_cart_transforms,write_products"
 
 [auth]
 redirect_urls = [
-  "https://graphs-genetics-municipality-publish.trycloudflare.com/auth/callback",
-  "https://graphs-genetics-municipality-publish.trycloudflare.com/auth/shopify/callback",
-  "https://graphs-genetics-municipality-publish.trycloudflare.com/api/auth/callback"
+  "https://grande-maui-treatments-sponsor.trycloudflare.com/auth/callback",
+  "https://grande-maui-treatments-sponsor.trycloudflare.com/auth/shopify/callback",
+  "https://grande-maui-treatments-sponsor.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

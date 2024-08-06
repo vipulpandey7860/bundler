@@ -1,20 +1,71 @@
+import React from "react";
 import {
   reactExtension,
   useApi,
+  Box,
   Text,
-} from '@shopify/ui-extensions-react/admin';
+  Link,
+  Image,
+  BlockStack,
+  InlineStack,
+  
+  
+} from "@shopify/ui-extensions-react/admin";
+export default reactExtension(
+  "admin.product-details.configuration.render",
+  () => <App />,
+);
 
-// The target used here must match the target used in the extension's toml file (./shopify.extension.toml)
-
-export default reactExtension('admin.product-details.configuration.render', () => <App />);
 
 function App() {
-  
-  const {extension: {target}, i18n} = useApi();
-  
+  const { data, error } = useApi();
+
+  if (error) {
+    return <Text>Error: {error.message}</Text>;
+  }
+
+  if (!data || !data.product || !data.product.productComponents) {
+    return <Text>Loading...</Text>;
+  }
+
   return (
-    <Text>
-      {i18n.translate('welcome', {target})}
-    </Text>
+    <BlockStack gap>
+      {data.product.productComponents.map((component) => (
+        <Box padding='small'   key={component.id}>
+        
+          <InlineStack gap >
+          
+                <Box blockSize="50" inlineSize="10%" >
+                <Link
+            to={`shopify://admin/products/${component.id.split("/").pop()}`}
+            external
+          >
+                <Image 
+                  loading="lazy"
+                  source={component.featuredImage?.url || ""}
+                    alt={component.title || ""}
+                />
+          </Link>
+
+              </Box>
+              
+
+              <BlockStack  >
+                <Box>
+                <Text variant="headingLg ">{component.title}</Text>
+
+                </Box>
+                <Box>
+                <Text variant="bodySm" color="black">
+                  {component.totalVariants}{" "}
+                  {component.totalVariants === 1 ? "variant" : "variants"}
+                </Text>
+                </Box>
+              </BlockStack>
+            </InlineStack>
+        </Box>
+
+      ))}
+    </BlockStack>
   );
 }
