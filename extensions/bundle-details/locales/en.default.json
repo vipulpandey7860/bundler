@@ -1,4 +1,4 @@
 {
   "name": "bundle-details",
-  "welcome": "bhak!"
+  "welcome": "Welcome to the {{target}} extension!"
 }

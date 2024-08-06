@@ -1,8 +1,26 @@
 import { authenticate } from "./shopify.server";
+import prisma from "./db.server";
 
 export async function createBundle(request, formData) {
   const { admin } = await authenticate.admin(request);
   const bundleData = JSON.parse(formData.get('formData'));
+  const session = await prisma.session.findFirst();
+    if (!session) {
+      throw new Error("No session found. Please ensure you have at least one session in the database.");
+    }
+    const offerData = {
+      bundleName: bundleData.bundleName,
+      createSectionBlock: bundleData.createSectionBlock,
+      description: bundleData.description, 
+      discountType: bundleData.discountType,
+      discountValue: bundleData.discountValue,
+      startDate: bundleData.startDate === 'null' ? new Date() : new Date(bundleData.startDate),
+      endDate: bundleData.endDate === 'null' ? null :  new Date(bundleData.endDate),
+      products: JSON.stringify(bundleData.products),
+      userId: session.id
+      
+    };  
+    await prisma.bundle.create({ data: offerData })
 
   const CREATE_PRODUCT_BUNDLE_MUTATION = `
   mutation ProductBundleCreate($input: ProductBundleCreateInput!) {

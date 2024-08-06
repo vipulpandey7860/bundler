@@ -11,15 +11,20 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { useActionData, useNavigation, useSubmit } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { createBundle } from "../create-bundle.server";
+import { authenticate } from "../shopify.server";
 
 
 export const action = async ({ request }) => {
+  const { redirect } = await authenticate.admin(request);
+
   const formData = await request.formData();
 
   try {
     const result = await createBundle(request, formData);
     console.log("Bundle operation result:", result);
-    return json({ success: true, bundleOperation: result });
+    // return json({ success: true, bundleOperation: result });
+      return redirect('/app', { actionData: result });
+
   } catch (error) {
     console.error("Error creating bundle:", error);
     return json({ success: false, error: error.message }, { status: 400 });
@@ -56,8 +61,9 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (actionData && actionData.success) {
-      shopify.toast.show('Bundle created successfully');
+      shopify.toast.show('Bundle created successfully', { duration: 4000 });
       resetForm();
+
     }
   }, [actionData, resetForm]);
   
